@@ -19,7 +19,7 @@ def read_database(filename):
                 continue
             rnd = list(map(int, line.split(' ')))
             result.append(rnd)
-    return result
+    return numpy.array(result)
 
 
 def split_database(database, split_by):

@@ -40,6 +40,8 @@ def main():
 
     assert args.input is not None
     assert args.model is not None
+    assert args.groundtruth is not None
+    gt_data = io.read_database(args.groundtruth)
 
     in_data = io.read_database(args.input)
     nr_rows = len(in_data)
@@ -49,14 +51,13 @@ def main():
 
     model = load_model(args.model)()
     model.train(in_data, nr_rows, nr_cols, nr_types)
-    model.predict(out_data, nr_rows, args.oround, nr_types)
+    model.predict(out_data, nr_rows, args.oround, nr_types, gt_data)
 
     if args.ofile is not None:
-        io.write_database(args.ofile)
-    if args.groundtruth is not None:
-        gt_data = io.read_database(args.groundtruth)
-        score, count = evaluate(out_data, gt_data)
-        print("model={} score={}/{}".format(args.model, score, count))
+        io.write_database(args.ofile, out_data)
+
+    score, count = evaluate(out_data, gt_data)
+    print("model={} score={}/{}".format(args.model, score, count))
 
 
 if __name__ == '__main__':

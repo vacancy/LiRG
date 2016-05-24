@@ -15,5 +15,5 @@ class ModelBase(object):
     def train(self, in_data, nr_rows, nr_cols, nr_types):
         raise NotImplementedError()
 
-    def predict(self, out_data, nr_rows, nr_cols, nr_types):
+    def predict(self, out_data, nr_rows, nr_cols, nr_types, gt_data):
         raise NotImplementedError()
