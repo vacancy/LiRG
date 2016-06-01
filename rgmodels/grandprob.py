@@ -19,10 +19,11 @@ class Model(ModelBase):
         self.stat = numpy.zeros((nr_rows, nr_types), dtype=numpy.float32)
         for i in range(nr_rows):
             for j in range(nr_cols):
-                self.stat[i, in_data[i][j]] += 1.0 / nr_cols
+                self.stat[i, in_data[i][j]] += 1
 
 
     def predict(self, out_data, nr_rows, nr_cols, nr_types, gt_data):
         for i in range(nr_rows):
             for j in range(nr_cols):
                 out_data[i][j] = utils.randprob(self.stat[i])
+                self.stat[i, gt_data[i][j]] += 1

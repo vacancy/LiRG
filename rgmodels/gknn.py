@@ -9,11 +9,12 @@
 
 
 from liblirg import *
-from sklearn import svm
+from sklearn import svm, neighbors
 
-g.nr_queue_size = 4
+g.nr_queue_size = 2
 g.svm_degree = 3
 g.svm_kernel = 'poly'
+g.nr_neighbours = 10
 
 
 class State(object):
@@ -40,7 +41,26 @@ class State(object):
         result.extend(self.mine)
         result.extend(self.oppo)
         return result
-    
+
+
+class KNN(object):
+    def __init__(self, nr_neighbours):
+        self.nr_neighbours = nr_neighbours
+        self.kdtree = None
+        self.label = None
+
+    def fit(self, data, label):
+        self.kdtree = neighbors.NearestNeighbors(n_neighbors=self.nr_neighbours, algorithm='ball_tree').fit(data)
+        self.label = label
+
+    def predict(self, data):
+        dis, index = self.kdtree.kneighbors(data)
+        dis, index = dis[0], index[0]
+
+        cnt = [0, 0, 0]
+        for i in range(len(index)):
+            cnt[self.label[index[i]]] += 1# / (dis[i]**2 + 0.01)
+        return [utils.argmax(cnt)]
 
 class Model(ModelBase):
     """
@@ -75,9 +95,9 @@ class Model(ModelBase):
             data1, data2 = self.datas[u1:u2+1]
             label1, label2 = self.labels[u1:u2+1]
             for j in range(nr_cols):
-                m1 = svm.SVC(kernel=g.svm_kernel, degree=g.svm_degree, decision_function_shape='ovr')
+                m1 = KNN(g.nr_neighbours)
                 m1.fit(data1, label1)
-                m2 = svm.SVC(kernel=g.svm_kernel, degree=g.svm_degree, decision_function_shape='ovr')
+                m2 = KNN(g.nr_neighbours)
                 m2.fit(data2, label2)
 
                 out_data[u1, j] = m1.predict([s1.get_tuple()])[0]

@@ -17,6 +17,13 @@ def randint(nr_type):
 
 
 def randprob(probs):
+    probs = numpy.array(probs)
+    s = probs.sum()
+    if s == 0:
+        return numpy.random.randint(0, len(probs))
+    else:
+        probs = probs / s
+
     r = numpy.random.rand()
     accumulate = 0
     for i, p in enumerate(probs):
@@ -26,4 +33,4 @@ def randprob(probs):
     return len(probs) - 1
 
 def argmax(probs):
-	return numpy.argmax(probs)
+    return numpy.argmax(probs)

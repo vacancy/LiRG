@@ -30,14 +30,6 @@ class Model(ModelBase):
         for i in range(nr_rows):
             for j in range(1, nr_cols):
                 self.mc[i][_d(in_data[i^1, j-1], in_data[i, j-1]), _d(in_data[i, j], in_data[i, j-1])] += 1
-        for i in range(nr_rows):
-            for k1 in range(nr_types):
-                s = self.mc[i, k1].sum()
-                if s > 0:
-                    self.mc[i, k1] /= self.mc[i, k1].sum()
-                else:
-                    self.mc[i, k1, :] = 1 / nr_types
-
 
     def predict(self, out_data, nr_rows, nr_cols, nr_types, gt_data):
         for i in range(0, nr_rows//2, 1):
@@ -47,5 +39,7 @@ class Model(ModelBase):
             for j in range(nr_cols):
                 out_data[u1, j] = (utils.argmax(self.mc[u1][_d(last2, last1)]) + last1)%3
                 out_data[u2, j] = (utils.argmax(self.mc[u2][_d(last1, last2)]) + last2)%3
+                self.mc[u1][_d(gt_data[u1^1, j-1], gt_data[u1, j-1]), _d(gt_data[u1, j], gt_data[u1, j-1])] += 1
+                self.mc[u2][_d(gt_data[u2^1, j-1], gt_data[u2, j-1]), _d(gt_data[u2, j], gt_data[u2, j-1])] += 1
                 last1 = gt_data[u1, j]
                 last2 = gt_data[u2, j]

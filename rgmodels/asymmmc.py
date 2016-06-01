@@ -27,16 +27,11 @@ class Model(ModelBase):
         for i in range(nr_rows):
             for j in range(1, nr_cols):
                 self.mc[i][(in_data[i, j] - in_data[i, j-1]+3)%3] += 1
-        for i in range(nr_rows):
-            if self.mc[i].sum() > 0:
-                self.mc[i] /= self.mc[i].sum()
-            else:
-                self.mc[i, :] = 1 / nr_types
-
 
     def predict(self, out_data, nr_rows, nr_cols, nr_types, gt_data):
         for i in range(nr_rows):
             last = self.in_data[i, -1]
             for j in range(nr_cols):
                 out_data[i, j] = (utils.randprob(self.mc[i]) + last) % 3
+                self.mc[i][(gt_data[i, j] - gt_data[i, j-1]+3)%3] += 1
                 last = gt_data[i, j]

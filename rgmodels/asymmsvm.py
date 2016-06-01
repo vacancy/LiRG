@@ -45,7 +45,8 @@ class State(object):
 class Model(ModelBase):
     def __init__(self):
         self.states = list()
-        self.svms = list()
+        self.datas = list()
+        self.labels = list()
 
     def train(self, in_data, nr_rows, nr_cols, nr_types):
         self.stat = numpy.zeros((nr_rows, nr_types), dtype=numpy.float32)
@@ -60,21 +61,34 @@ class Model(ModelBase):
                     label.append((in_data[i][j]-a+3)%3)
                 state.push(in_data[i][j], in_data[i^1][j])
 
-            m = svm.SVC(kernel='poly', degree=g.svm_degree)
-            m.fit(data, label)
-            self.svms.append(m);
             self.states.append(state)
+            self.datas.append(data)
+            self.labels.append(label)
 
 
     def predict(self, out_data, nr_rows, nr_cols, nr_types, gt_data):
         for i in range(0, nr_rows//2, 1):
             u1, u2 = 2*i, 2*i+1
             s1, s2 = self.states[u1:u2+1]
-            m1, m2 = self.svms[u1:u2+1]
+            data1, data2 = self.datas[u1:u2+1]
+            label1, label2 = self.labels[u1:u2+1]
             for j in range(nr_cols):
+                m1 = svm.SVC(kernel='poly', degree=g.svm_degree, decision_function_shape='ovr')
+                m1.fit(data1, label1)
+                m2 = svm.SVC(kernel='poly', degree=g.svm_degree, decision_function_shape='ovr')
+                m2.fit(data2, label2)
+                
                 a, result = s1.get_tuple()
                 out_data[u1, j] = (m1.predict([result])[0] + a) % 3
                 a, result = s2.get_tuple()
                 out_data[u2, j] = (m2.predict([result])[0] + a) % 3
+
                 s1.push(gt_data[u1, j], gt_data[u2, j])
+                a, result = s1.get_tuple()
+                data1.append(result)
+                label1.append((gt_data[u1][j]-a+3)%3)
+
                 s2.push(gt_data[u2, j], gt_data[u1, j])
+                a, result = s2.get_tuple()
+                data2.append(result)
+                label2.append((gt_data[u2][j]-a+3)%3)

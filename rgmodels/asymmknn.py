@@ -1,5 +1,5 @@
 # -*- coding:utf8 -*-
-# File   : gsvm.py
+# File   : asymmsvm.py
 # Author : Jiayuan Mao
 # Email  : mjy14@mails.tsinghua.edu.cn
 # Date   : 2016-05-22 11:11:39
@@ -10,11 +10,11 @@
 
 from liblirg import *
 from sklearn import svm
+from rgmodels.gknn import KNN
 
-g.nr_queue_size = 4
-g.svm_degree = 3
-g.svm_kernel = 'poly'
-
+g.nr_queue_size = 2
+g.nr_neighbours = 3
+g.svm_degree = 10
 
 class State(object):
     def __init__(self, max_len):
@@ -39,13 +39,12 @@ class State(object):
         result = list()
         result.extend(self.mine)
         result.extend(self.oppo)
-        return result
-    
+        a, result = result[0], result[1:]
+        result = list(map(lambda x: (x-a+3)%3, result))
+        return a, result
+
 
 class Model(ModelBase):
-    """
-    Always output the action that the given agent have done most frequently.
-    """
     def __init__(self):
         self.states = list()
         self.datas = list()
@@ -59,10 +58,11 @@ class Model(ModelBase):
             state = State(g.nr_queue_size)
             for j in range(nr_cols):
                 if state.ok():
-                    data.append(state.get_tuple())
-                    label.append(in_data[i][j])
+                    a, result = state.get_tuple()
+                    data.append(result)
+                    label.append((in_data[i][j]-a+3)%3)
                 state.push(in_data[i][j], in_data[i^1][j])
-            # print(len(data), len(label))
+
             self.states.append(state)
             self.datas.append(data)
             self.labels.append(label)
@@ -75,17 +75,22 @@ class Model(ModelBase):
             data1, data2 = self.datas[u1:u2+1]
             label1, label2 = self.labels[u1:u2+1]
             for j in range(nr_cols):
-                m1 = svm.SVC(kernel=g.svm_kernel, degree=g.svm_degree, decision_function_shape='ovr')
+                m1 = KNN(g.nr_neighbours)
                 m1.fit(data1, label1)
-                m2 = svm.SVC(kernel=g.svm_kernel, degree=g.svm_degree, decision_function_shape='ovr')
+                m2 = KNN(g.nr_neighbours)
                 m2.fit(data2, label2)
+                
+                a, result = s1.get_tuple()
+                out_data[u1, j] = (m1.predict([result])[0] + a) % 3
+                a, result = s2.get_tuple()
+                out_data[u2, j] = (m2.predict([result])[0] + a) % 3
 
-                out_data[u1, j] = m1.predict([s1.get_tuple()])[0]
-                out_data[u2, j] = m2.predict([s2.get_tuple()])[0]
                 s1.push(gt_data[u1, j], gt_data[u2, j])
-                s2.push(gt_data[u2, j], gt_data[u1, j])
+                a, result = s1.get_tuple()
+                data1.append(result)
+                label1.append((gt_data[u1][j]-a+3)%3)
 
-                data1.append(s1.get_tuple())
-                label1.append(gt_data[u1][j])
-                data2.append(s2.get_tuple())
-                label2.append(gt_data[u2][j])
+                s2.push(gt_data[u2, j], gt_data[u1, j])
+                a, result = s2.get_tuple()
+                data2.append(result)
+                label2.append((gt_data[u2][j]-a+3)%3)
